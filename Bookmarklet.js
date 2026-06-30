@@ -23,71 +23,41 @@ javascript:(function(){
 
   function isAdPlaying(){
     return document.querySelector('.ad-showing, .ytp-ad-player-overlay, ytd-ad-slot-renderer, .ytp-ad-overlay-container') !== null ||
-           document.querySelector('button.ytp-ad-skip-button-modern') !== null;
+           document.querySelector('button.ytp-ad-skip-button-modern, .ytp-ad-skip-button') !== null;
   }
 
   function nukeAds(){
     const videos = document.querySelectorAll('video');
+    const skipBtn = document.querySelector('button.ytp-ad-skip-button-modern, .ytp-ad-skip-button');
+    
+    // Auto click skip button if available
+    if(skipBtn) skipBtn.click();
 
     videos.forEach(video => {
       if(video && video.duration > 1){
-        // Force skip non-skippable
         if(isAdPlaying()){
+          // Force skip and speed through ad
           video.currentTime = Math.max(video.duration - 0.3, video.currentTime + 5);
-          video.playbackRate = 16;           // Speed through ad
+          video.playbackRate = 16;           
           if(!video.muted){
             god.originalVolume = video.volume;
             video.muted = true;
             god.muted = true;
           }
-        } else if(god.muted){
-          video.muted = false;
-          video.playbackRate = 1;
-          god.muted = false;
+        } else {
+          // Restore normal playback after ad finishes
+          if(video.playbackRate === 16) video.playbackRate = 1;
+          if(god.muted) {
+            video.muted = false;
+            video.volume = god.originalVolume;
+            god.muted = false;
+          }
         }
       }
     });
-
-    // Click every possible skip button
-    const skipBtns = document.querySelectorAll('button.ytp-ad-skip-button-modern, .ytp-ad-skip-button, [aria-label*="Skip"], .ytp-skip-ad-button');
-    skipBtns.forEach(btn => btn.click());
-
-    // Nuclear DOM removal
-    const adSelectors = [
-      '.ad-showing', 'ytd-ad-slot-renderer', '.ytp-ad-overlay-container',
-      '.ytp-ad-module', 'ytd-player-legacy-desktop-watch-ads-renderer',
-      '.ytp-ad-player-overlay', '[class*="ad-"]', 'ytm-promoted-sparkles-web-renderer'
-    ];
-
-    adSelectors.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => {
-        el.style.display = 'none';
-        el.remove();
-      });
-    });
   }
 
-  // Instant detection
-  god.observer = new MutationObserver(nukeAds);
-  god.observer.observe(document.documentElement, { 
-    childList: true, 
-    subtree: true, 
-    attributes: true,
-    attributeFilter: ['class']
-  });
-
-  // Multiple aggressive intervals
-  god.intervals.push(setInterval(nukeAds, 80));   // Ultra fast
+  // Run checks every 250 milliseconds
   god.intervals.push(setInterval(nukeAds, 250));
-  god.intervals.push(setInterval(() => {
-    if(isAdPlaying()) nukeAds();
-  }, 400));
-
-  // Initial blast
-  setTimeout(nukeAds, 100);
-  setTimeout(nukeAds, 600);
-  setTimeout(nukeAds, 1200);
-
-  console.log('%c🔥 YOUTUBE GOD MODE ACTIVATED - Strongest Ad Skipper 2026','color:#0f0;font-size:16px;font-weight:bold');
-  alert('🔥 YouTube GOD MODE Activated!\n\nIt will nuke ads the instant they appear.\n\nClick the bookmark again to disable.');
+  console.log('%c🚀 YouTube God Mode Activated','color:green;font-weight:bold');
 })();
